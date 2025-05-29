@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Intrusion Detection System</title>
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .neon-button {
+      position: relative;
+      transition: all 0.3s ease-in-out;
+      box-shadow: 0 0 0 transparent;
+      z-index: 0;
+      overflow: hidden;
+    }
+
+    .neon-button::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle, rgba(72, 187, 120, 0.3) 0%, transparent 70%);
+      animation: pulseGlow 2s linear infinite;
+      opacity: 0;
+      z-index: -1;
+      transition: opacity 0.3s ease-in-out;
+    }
+
+    .neon-button:hover::before {
+      opacity: 1;
+    }
+
+    .neon-button:hover {
+      transform: scale(1.03);
+      box-shadow: 0 0 15px rgba(72, 187, 120, 0.6), 0 0 30px rgba(72, 187, 120, 0.4);
+    }
+
+    @keyframes pulseGlow {
+      0% { transform: scale(1); opacity: 0.4; }
+      50% { transform: scale(1.5); opacity: 0.6; }
+      100% { transform: scale(1); opacity: 0.4; }
+    }
+
+    @keyframes fade-in {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fade-in {
+      animation: fade-in 0.8s ease-out both;
+    }
+  </style>
+</head>
+<body class="bg-gray-100 font-sans antialiased bg-cover bg-center" style="background-image: url('eye-binary-abstract-100749562-orig.webp'); background-attachment: fixed;">
+
+  <!-- Insert this inside the body, replacing your existing main content wrapper -->
+<div class="max-w-3xl mx-auto p-6 bg-white/20 backdrop-blur-lg rounded-lg shadow-2xl border border-white/30 transition-all duration-300 ease-in-out animate-fade-in hover:border-indigo-500 hover:shadow-indigo-500/50 hover:scale-105">
+  
+  <div class="text-center mb-6">
+    <h1 class="text-3xl font-bold text-indigo-600">Intrusion Detection System</h1>
+    <p class="text-gray-100">Detect Network Intrusions with Machine Learning</p>
+  </div>
+
+  <!-- Tab Buttons -->
+  <div class="flex justify-center gap-4 mb-6">
+    <button class="tab-btn neon-button bg-indigo-600 text-white px-4 py-2 rounded" onclick="showTab('manual')">Manual Test</button>
+    <button class="tab-btn neon-button bg-indigo-600 text-white px-4 py-2 rounded" onclick="showTab('csv')">CSV Predict</button>
+    <button class="tab-btn neon-button bg-indigo-600 text-white px-4 py-2 rounded" onclick="showTab('live')">Live Capture</button>
+  </div>
+
+  <!-- Manual Input -->
+  <div id="manual" class="tab-section hidden bg-white/80 p-6 rounded shadow-lg">
+    <h2 class="text-2xl font-semibold mb-4 text-gray-800">Manual Input Test</h2>
+    <button class="bg-green-600 text-white px-4 py-2 rounded-md neon-button mb-4" onclick="autofill()">Autofill Test Data</button>
+    <form id="inputForm">
+      <textarea id="features" rows="5" class="w-full border-2 border-gray-300 rounded-md p-3 mb-2 text-gray-700" placeholder="Enter 41 comma-separated features"></textarea>
+      <p id="manualError" class="text-red-500 text-sm hidden">Please enter 41 comma-separated numbers.</p>
+      <button type="button" onclick="submitForm()" class="bg-green-600 text-white px-6 py-2 rounded-md neon-button">Submit</button>
+    </form>
+    <div id="result" class="mt-4 text-lg font-semibold text-gray-800"></div>
+  </div>
+
+  <!-- CSV Section -->
+  <div id="csv" class="tab-section hidden bg-white/80 p-6 rounded shadow-lg">
+    <h2 class="text-2xl font-semibold mb-4 text-gray-800">Upload CSV File</h2>
+    <input type="file" id="csvFile" class="border-2 border-gray-300 rounded-md p-2 mb-2">
+    <p id="csvError" class="text-red-500 text-sm hidden">Please upload a CSV file.</p>
+    <button onclick="submitCSV()" class="bg-green-600 text-white px-6 py-2 rounded-md neon-button">Upload & Predict</button>
+    <div id="csvLoader" class="text-blue-600 mt-4 hidden">Loading...</div>
+    <div id="csvResult" class="mt-4 text-lg font-semibold text-gray-800"></div>
+  </div>
+
+  <!-- Live Capture Section -->
+  <div id="live" class="tab-section hidden bg-white/80 p-6 rounded shadow-lg">
+    <h2 class="text-2xl font-semibold mb-4 text-gray-800">Real-Time Packet Capture</h2>
+    <button class="bg-blue-600 text-white px-6 py-2 rounded-md neon-button mb-2" onclick="loadInterfaces()">Load Interfaces</button>
+    <select id="interfaceSelect" class="border-2 border-gray-300 rounded-md p-2 mb-2">
+      <option value="">Select Interface</option>
+    </select>
+    <p id="interfaceError" class="text-red-500 text-sm hidden">Please select an interface.</p>
+    <button onclick="startPacketCapture()" class="bg-green-600 text-white px-6 py-2 rounded-md neon-button">Start Capture</button>
+    <div id="packetLoader" class="text-blue-600 mt-4 hidden">Capturing packets...</div>
+    <div id="packetCaptureResult" class="mt-4 text-lg font-semibold text-gray-800"></div>
+  </div>
+</div>
+
+<script>
+  function showTab(id) {
+    document.querySelectorAll('.tab-section').forEach(div => div.classList.add('hidden'));
+    document.getElementById(id).classList.remove('hidden');
+    document.querySelectorAll('.text-red-500').forEach(msg => msg.classList.add('hidden'));
+  }
+
+  function autofill() {
+    const example = Array(41).fill(0);
+    document.getElementById("features").value = example.join(",");
+  }
+
+  function submitForm() {
+    const raw = document.getElementById("features").value.trim();
+    const features = raw.split(",").map(Number);
+    if (features.length !== 41 || features.some(isNaN)) {
+      document.getElementById("manualError").classList.remove("hidden");
+      return;
+    } else {
+      document.getElementById("manualError").classList.add("hidden");
+    }
+
+    axios.post("http://127.0.0.1:5000/predict", { features })
+      .then(response => {
+        document.getElementById("result").innerHTML = `<span class="${response.data.result.toLowerCase() === 'normal' ? 'text-green-600' : 'text-red-600'}">${response.data.result}</span>`;
+      })
+      .catch(err => alert("Prediction failed."));
+  }
+
+  function submitCSV() {
+    const file = document.getElementById("csvFile").files[0];
+    if (!file) {
+      document.getElementById("csvError").classList.remove("hidden");
+      return;
+    } else {
+      document.getElementById("csvError").classList.add("hidden");
+    }
+
+    document.getElementById("csvLoader").classList.remove("hidden");
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    axios.post("http://127.0.0.1:5000/predict_csv", formData)
+      .then(res => {
+        const results = res.data.results;
+        const summary = results.reduce((acc, r) => {
+  const pred = r.trim().toLowerCase();
+  if (pred === 'normal') acc.normal++;
+  else acc.attack++;
+  return acc;
+}, { normal: 0, attack: 0 });
+
+
+        let tableHTML = `
+          <h3 class="text-lg mb-2">Summary: ${summary.normal} Normal, ${summary.attack} Attack</h3>
+          <div class="overflow-x-auto">
+            <table class="min-w-full border border-gray-300 bg-white shadow-sm rounded-lg">
+              <thead class="bg-gray-100">
+                <tr><th class="px-4 py-2 border">#</th><th class="px-4 py-2 border">Prediction</th></tr>
+              </thead>
+              <tbody>
+                ${results.map((r, i) => `
+                  <tr class="hover:bg-gray-50">
+                    <td class="px-4 py-2 border text-center">${i + 1}</td>
+                    <td class="px-4 py-2 border text-center font-bold ${r.trim().toLowerCase() === 'normal' ? 'text-green-600' : 'text-red-600'}">${r}</td>
+                  </tr>`).join("")}
+              </tbody>
+            </table>
+          </div>`;
+        document.getElementById("csvLoader").classList.add("hidden");
+        document.getElementById("csvResult").innerHTML = tableHTML;
+      })
+      .catch(err => {
+        document.getElementById("csvLoader").classList.add("hidden");
+        alert("CSV Prediction Failed.");
+      });
+  }
+
+  function loadInterfaces() {
+    axios.get("http://127.0.0.1:5000/get_interfaces")
+      .then(res => {
+        const dropdown = document.getElementById("interfaceSelect");
+        dropdown.innerHTML = `<option value="">Select Interface</option>`;
+        res.data.interfaces.forEach(i => {
+          const opt = document.createElement("option");
+          opt.value = i;
+          opt.textContent = i;
+          dropdown.appendChild(opt);
+        });
+      })
+      .catch(() => alert("Could not load interfaces."));
+  }
+
+  function startPacketCapture() {
+    const iface = document.getElementById("interfaceSelect").value;
+    if (!iface) {
+        document.getElementById("interfaceError").classList.remove("hidden");
+        return;
+    } else {
+        document.getElementById("interfaceError").classList.add("hidden");
+    }
+
+    document.getElementById("packetLoader").classList.remove("hidden");
+
+    axios.get(`http://127.0.0.1:5000/start_capture?interface=${iface}`)
+        .then(res => {
+            const packets = res.data.capture_data;
+
+            // Initialize summary object
+            const summary = packets.reduce((acc, p) => {
+                console.log("Packet:", p);  // Log the full packet data
+                const pred = (p.prediction || "").trim().toLowerCase();  // Safely handle missing/undefined predictions
+                console.log("Prediction after trim and lowercase:", pred);  // Log the processed prediction
+
+                // Increase counters based on the prediction
+                if (pred === 'normal') acc.normal++;
+                else if (pred === 'attack') acc.attack++;
+
+                return acc;
+            }, { normal: 0, attack: 0 });
+
+            // Prepare the table HTML with color-coding
+            const tableHTML = `
+                <h3 class="text-lg mb-2">Summary: ${summary.normal} Normal, ${summary.attack} Attack</h3>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full bg-white border border-gray-300 rounded shadow-sm">
+                        <thead class="bg-gray-100 text-gray-800">
+                            <tr><th class="px-4 py-2 border">#</th><th class="px-4 py-2 border">Packet Summary</th><th class="px-4 py-2 border">Prediction</th></tr>
+                        </thead>
+                        <tbody>
+                            ${packets.map((d, i) => `
+                                <tr class="hover:bg-gray-50">
+                                    <td class="px-4 py-2 border text-center">${i + 1}</td>
+                                    <td class="px-4 py-2 border">${d.packet}</td>
+                                    <td class="px-4 py-2 border font-bold ${d.prediction.trim().toLowerCase() === 'normal' ? 'text-green-600' : 'text-red-600'}">${d.prediction}</td>
+                                </tr>`).join("")}
+                        </tbody>
+                    </table>
+                </div>`;
+
+            document.getElementById("packetLoader").classList.add("hidden");
+            document.getElementById("packetCaptureResult").innerHTML = tableHTML;
+        })
+        .catch(() => {
+            document.getElementById("packetLoader").classList.add("hidden");
+            alert("Packet capture failed.");
+        });
+}
+
+// Show Manual Tab by Default
+document.addEventListener('DOMContentLoaded', () => showTab('manual'));
+
+</script>
+
+</body>
+</html>
