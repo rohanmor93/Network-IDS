@@ -18,8 +18,7 @@ A full-stack machine learning–based IDS built with Python (Flask), Scapy, PySh
 
 ## 🚀 Demo
 
-> *Coming Soon: Add a link to the Vercel deployment if hosted*
-
+>coming_soon
 ---
 
 ## 🛠️ Technologies Used
