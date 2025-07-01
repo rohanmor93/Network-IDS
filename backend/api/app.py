@@ -11,7 +11,7 @@ import pyshark
 
 app = Flask(__name__)
 CORS(app)
-app.secret_key = 'd3e9a8d90be38d348f87f5ae07c91e63c0bd2ff80f1bc01c93d0a1c9fbeadb70'
+app.secret_key = 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
 
 # Dummy credentials
 USERNAME = "admin"
